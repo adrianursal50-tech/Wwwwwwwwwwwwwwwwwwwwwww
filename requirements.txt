@@ -3,3 +3,4 @@ requests>=2.28
 pycryptodome
 psycopg2-binary
 colorama
+rich

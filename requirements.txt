@@ -1,2 +1,5 @@
+python-telegram-bot>=20.0
 requests>=2.28
-pyTelegramBotAPI
+pycryptodome
+psycopg2-binary
+colorama

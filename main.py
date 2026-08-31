@@ -124,7 +124,7 @@ if not BOT_TOKEN:
     if not BOT_TOKEN:
         print("  No token. Exiting.")
         sys.exit(1)
-    cfg["bot_token"] = BOT_TOKEN
+    cfg["bot_token"] = 8597114754:AAH3nvgyXWg1KpQq1_Qn2Lva2J0yozUJxGc
     _save_json(CONFIG_FILE, cfg)
 
 # =============================================================================

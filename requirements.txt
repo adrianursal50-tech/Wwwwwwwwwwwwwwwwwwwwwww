@@ -4,3 +4,4 @@ pycryptodome
 psycopg2-binary
 colorama
 rich
+telebot

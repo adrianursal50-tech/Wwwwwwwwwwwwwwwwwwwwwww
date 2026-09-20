@@ -1,12 +1,18 @@
 # fix_patch.py — repair layer for a.py
 # Import BEFORE anything calls a.prelogin / a.processaccount:
 #   import fix_patch   # noqa: F401
-# The import monkey-patches a.get_datadome_cookie and a.prelogin.
+# The import monkey-patches:
+#   • a.get_datadome_cookie  → fresh 5.10.0 payload
+#   • a.prelogin             → honest failure reporting (no false "no account")
+#   • a.ProxyManager.__init__ → validates every proxy, drops dead ones,
+#                               falls back to direct if the pool is empty
 
+import os
 import time
 import json
 import logging
 import requests
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import a as _engine
 
@@ -33,9 +39,6 @@ _FRESH_EVENT_COUNTERS = (
     '"keydown":0,"keyup":0}'
 )
 
-# Pre-encoded so that after urllib.parse.quote(v) the resulting body byte-
-# matches the browser capture. (Browser sends these double-encoded because the
-# DataDome JS already URL-encodes them once before submit.)
 _REFERER_VALUE = (
     "https%3A%2F%2Fsso.garena.com%2Funiversal%2Flogin%3Fapp_id%3D10100"
     "%26redirect_uri%3Dhttps%253A%252F%252Faccount.garena.com%252F"
@@ -62,7 +65,6 @@ def get_datadome_cookie_v2(session, proxies=None):
         "Connection": "keep-alive",
     }
 
-    # Dict order preserved by Python 3.7+, matching the browser's field order.
     payload = {
         "jspl": _FRESH_JSPL,
         "eventCounters": _FRESH_EVENT_COUNTERS,
@@ -244,4 +246,64 @@ def prelogin_v2(session, account, datadome_manager, cookie_manager,
 _engine.prelogin = prelogin_v2
 log.info("fix_patch: a.prelogin replaced (honest reporting)")
 
-print("[fix_patch] a.py patched — DataDome 5.10.0, honest prelogin, no mislabel.")
+
+# =============================================================================
+# 3. PROXY VALIDATION — drop dead proxies at load, fall back to direct if empty
+# =============================================================================
+
+def _install_proxy_validation():
+    """Monkeypatch a.ProxyManager.__init__ to validate every proxy once."""
+    _orig_init = _engine.ProxyManager.__init__
+
+    def _check(p):
+        try:
+            r = requests.get(
+                "https://api.ipify.org",
+                proxies=p,
+                timeout=4,
+            )
+            return p if r.status_code == 200 else None
+        except Exception:
+            return None
+
+    def _new_init(self, proxy_file="proxies.txt"):
+        _orig_init(self, proxy_file=proxy_file)
+
+        # Env kill-switch: DISABLE_PROXIES=1 → run direct, skip validation.
+        if os.getenv("DISABLE_PROXIES", "").lower() in ("1", "true", "yes"):
+            self.proxies = []
+            log.warning("[proxy] DISABLE_PROXIES=1 — running direct, no proxies")
+            return
+
+        if not self.proxies:
+            log.info("[proxy] no proxies to validate")
+            return
+
+        total = len(self.proxies)
+        log.info("[proxy] validating %d proxies (4s timeout, 100 workers)…", total)
+
+        valid = []
+        with ThreadPoolExecutor(max_workers=100) as ex:
+            futs = {ex.submit(_check, p): p for p in self.proxies}
+            for f in as_completed(futs):
+                try:
+                    v = f.result()
+                    if v:
+                        valid.append(v)
+                except Exception:
+                    pass
+
+        self.proxies = valid
+        log.info("[proxy] %d/%d alive after validation", len(valid), total)
+
+        if not valid:
+            log.warning("[proxy] ZERO alive — running direct. Get fresh proxies.")
+
+    _engine.ProxyManager.__init__ = _new_init
+    log.info("fix_patch: proxy validation installed")
+
+
+_install_proxy_validation()
+
+print("[fix_patch] a.py patched — DataDome 5.10.0, honest prelogin, "
+      "proxy validation, direct fallback.")

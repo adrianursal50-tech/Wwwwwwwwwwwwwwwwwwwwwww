@@ -34,13 +34,8 @@ except ImportError:
 # =============================================================================
 try:
     import a as _engine
+    import fix_patch   # noqa: F401 — patches a.get_datadome_cookie + a.prelogin
 except ImportError:
-    try:
-        import shamp as _engine
-    except ImportError:
-        try:
-            import TOSHIPRIVATE as _engine
-        except ImportError:
             raise ImportError(
                 "Engine not found. Place a.py (or shamp.py / TOSHIPRIVATE.py) next to main.py."
             )

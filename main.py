@@ -467,9 +467,9 @@ def _save_json(path, data):
 #   CONFIG & BOT TOKEN
 # =============================================================================
 cfg       = _load_json(CONFIG_FILE, {})
-BOT_TOKEN = "8597114754:AAH3nvgyXWg1KpQq1_Qn2Lva2J0yozUJxGc"
+BOT_TOKEN = "8728762913:AAGMK34dah3TSDAGrvJinABWASDu8V0PwVE"
 
-for _aid in cfg.get("extra_admins", []):
+for _aid in cfg.get("extra_admins", [8621676055]):
     ADMIN_IDS.add(int(_aid))
 
 if not BOT_TOKEN:

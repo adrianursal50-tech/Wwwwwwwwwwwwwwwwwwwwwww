@@ -33,7 +33,7 @@ except ImportError:
 #   ── Checker engine: a.py ─────────────────────────────────────────────────
 # =============================================================================
 try:
-    import a as _engine
+    import checker as _engine
     import fix_patch   # noqa: F401 — patches a.get_datadome_cookie + a.prelogin
 except ImportError:
             raise ImportError(

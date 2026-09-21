@@ -645,7 +645,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ══════════════════════════════════════════════════════════════════════
 
 def _load_token() -> str | None:
-    tok = os.environ.get('BOT_TOKEN', '8702549007:AAHe3d-RSBaYs4wX4D4x4rkLpevipByEPqs').strip()
+    tok = os.environ.get('BOT_TOKEN', '8728762913:AAHtD9QPT8-BN63mCVie6EpiO2GC2dJl_OQ').strip()
     if tok:
         return tok
     p = Path('bot_token.txt')
